@@ -57,6 +57,9 @@ namespace IngameScript
         public void Main(string argument, UpdateType updateSource)
         {
             Echo("State: " + state);
+            Echo("LastRunTimeMs: " + Runtime.LastRunTimeMs);
+            Echo("CurrentInstructionCount: " + Runtime.CurrentInstructionCount);
+            Echo("MaxInstructionCount: " + Runtime.MaxInstructionCount);
 
             // The cases for this state machine are arranged as follows:
             // * check for end condition, and exit ASAP if not met;
@@ -69,7 +72,7 @@ namespace IngameScript
                             return;
 
                     drills.ForEach(drill => drill.Enabled = false);
-                    // TODO: turn on front gear auto-lock
+                    GearsAutolock(gearsFront);
                     pistonsFront.ForEach(piston => piston.Extend());
                     state = "LOCKING FRONT";
 
@@ -80,7 +83,7 @@ namespace IngameScript
                     if (!PistonsInHighestPosition(pistonsFront))
                         return;
 
-                    // TODO: unlock rear gears
+                    GearsUnlock(gearsRear);
                     pistonsRear.ForEach(piston => piston.Retract());
                     state = "UNLOCKING REAR";
 
@@ -99,7 +102,7 @@ namespace IngameScript
                     if (!PistonsInLowestPosition(pistonsAxial))
                         return;
 
-                    // TODO: turn on rear gear auto-lock
+                    GearsAutolock(gearsRear);
                     pistonsRear.ForEach(piston => piston.Extend());
                     state = "LOCKING REAR";
 
@@ -110,7 +113,7 @@ namespace IngameScript
                     if (!PistonsInHighestPosition(pistonsRear))
                         return;
 
-                    // TODO: unlock front gears
+                    GearsUnlock(gearsFront);
                     pistonsFront.ForEach(piston => piston.Retract());
                     state = "UNLOCKING FRONT";
 
@@ -149,6 +152,16 @@ namespace IngameScript
                 if (piston.CurrentPosition != piston.HighestPosition)
                     return false;
             return true;
+        }
+
+        void GearsAutolock(List<IMyLandingGear> gears)
+        {
+            gears.ForEach(gear => gear.AutoLock = true);
+        }
+        void GearsUnlock(List<IMyLandingGear> gears)
+        {
+            gears.ForEach(gear => gear.AutoLock = false);
+            gears.ForEach(gear => gear.Unlock());
         }
     }
 }
