@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TunnelWorm", "TunnelWorm\TunnelWorm.csproj", "{DF93E9EA-DFD3-4950-9CF9-0F1AE2C06D98}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DF93E9EA-DFD3-4950-9CF9-0F1AE2C06D98}.Debug|x64.ActiveCfg = Debug|x64
+		{DF93E9EA-DFD3-4950-9CF9-0F1AE2C06D98}.Debug|x64.Build.0 = Debug|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {946F86DE-68E2-4C1F-8B80-642C7CACEB00}
+	EndGlobalSection
+EndGlobal
