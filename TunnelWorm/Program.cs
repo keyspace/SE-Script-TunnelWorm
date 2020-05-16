@@ -21,40 +21,38 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        string _state;
+        string state;
+        List<IMyShipDrill> drills = new List<IMyShipDrill>();
+        List<IMyExtendedPistonBase> pistonsAxial = new List<IMyExtendedPistonBase>();
 
         public Program()
         {
             Runtime.UpdateFrequency = UpdateFrequency.Once | UpdateFrequency.Update100;
 
-            string[] storedData = Storage.Split('\n');
+            string[] storedData = Storage.Split(';');
             if (storedData.Length >= 1)
             {
-                _state = storedData[0];
-                Me.CustomData = _state;
+                state = storedData[0];
+                Me.CustomData = state;
             }
+
+            IMyBlockGroup drillsGroup = GridTerminalSystem.GetBlockGroupWithName("Drills");
+            drillsGroup.GetBlocksOfType(drills);
+
+            IMyBlockGroup pistonsAxialGroup = GridTerminalSystem.GetBlockGroupWithName("Pistons Axial");
+            pistonsAxialGroup.GetBlocksOfType(pistonsAxial);
         }
 
         public void Save()
         {
-            Storage = string.Join("\n",
-                _state ?? "ERROR"
-            );
+            Storage = string.Join(";", state ?? "ERROR");
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("State: " + _state);
+            Echo("State: " + state);
 
-            IMyBlockGroup pistonsAxialGroup = GridTerminalSystem.GetBlockGroupWithName("Pistons Axial");
-            List<IMyExtendedPistonBase> pistonsAxial = new List<IMyExtendedPistonBase>();
-            pistonsAxialGroup.GetBlocksOfType(pistonsAxial);
-
-            IMyBlockGroup drillsGroup = GridTerminalSystem.GetBlockGroupWithName("Drills");
-            List<IMyShipDrill> drills = new List<IMyShipDrill>();
-            drillsGroup.GetBlocksOfType(drills);
-
-            switch (_state)
+            switch (state)
             {
                 case "DRILLING":
                     foreach (var piston in pistonsAxial)
@@ -65,15 +63,8 @@ namespace IngameScript
 
                     drills.ForEach(drill => drill.Enabled = false);
                     pistonsAxial.ForEach(piston => piston.Retract());
-                    //foreach (var drill in drills)
-                    //{
-                    //    drill.Enabled = false;
-                    //}
-                    //foreach (var piston in pistonsAxial)
-                    //{
-                    //    piston.Retract();
-                    //}
-                    _state = "CONTRACTING";
+                    
+                    state = "CONTRACTING";
                     
                     break; // case "DRILLING"
 
@@ -86,15 +77,8 @@ namespace IngameScript
 
                     drills.ForEach(drill => drill.Enabled = true);
                     pistonsAxial.ForEach(piston => piston.Extend());
-                    //foreach (var drill in drills)
-                    //{
-                    //    drill.Enabled = true;
-                    //}
-                    //foreach (var piston in pistonsAxial)
-                    //{
-                    //    piston.Extend();
-                    //}
-                    _state = "DRILLING";
+                    
+                    state = "DRILLING";
                     
                     break; // case "CONTRACTING"
 
@@ -102,7 +86,7 @@ namespace IngameScript
                     break;
 
                 default:
-                    _state = Me.CustomData;
+                    state = Me.CustomData;
                     break;
             }
         }
