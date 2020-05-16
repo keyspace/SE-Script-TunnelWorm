@@ -41,6 +41,7 @@ namespace IngameScript
                 //Me.CustomData = state;
             }
 
+            // TODO: catch exception when missing group(s)
             GridTerminalSystem.GetBlockGroupWithName("Drills").GetBlocksOfType(_drills);
             GridTerminalSystem.GetBlockGroupWithName("Landing Gears Front").GetBlocksOfType(_gearsFront);
             GridTerminalSystem.GetBlockGroupWithName("Landing Gears Rear").GetBlocksOfType(_gearsRear);
@@ -63,6 +64,7 @@ namespace IngameScript
 
             if (updateSource == UpdateType.Terminal)
             {
+                // TODO: allow any case
                 state = argument;
             }
 
@@ -116,7 +118,7 @@ namespace IngameScript
                     if (!AreAnyGearsLocked(_gearsRear))
                         return;
 
-                        GearsUnlock(_gearsFront);
+                    GearsUnlock(_gearsFront);
                     PistonsRetract(_pistonsFront);
                     state = "UNLOCKING FRONT";
 
