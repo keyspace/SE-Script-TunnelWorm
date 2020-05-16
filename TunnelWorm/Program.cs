@@ -23,12 +23,12 @@ namespace IngameScript
     {
         string state;
 
-        List<IMyShipDrill> drills = new List<IMyShipDrill>();
-        List<IMyLandingGear> gearsFront = new List<IMyLandingGear>();
-        List<IMyLandingGear> gearsRear = new List<IMyLandingGear>();
-        List<IMyExtendedPistonBase> pistonsAxial = new List<IMyExtendedPistonBase>();
-        List<IMyExtendedPistonBase> pistonsFront = new List<IMyExtendedPistonBase>();
-        List<IMyExtendedPistonBase> pistonsRear = new List<IMyExtendedPistonBase>();
+        List<IMyShipDrill> _drills = new List<IMyShipDrill>();
+        List<IMyLandingGear> _gearsFront = new List<IMyLandingGear>();
+        List<IMyLandingGear> _gearsRear = new List<IMyLandingGear>();
+        List<IMyExtendedPistonBase> _pistonsAxial = new List<IMyExtendedPistonBase>();
+        List<IMyExtendedPistonBase> _pistonsFront = new List<IMyExtendedPistonBase>();
+        List<IMyExtendedPistonBase> _pistonsRear = new List<IMyExtendedPistonBase>();
 
         public Program()
         {
@@ -41,12 +41,12 @@ namespace IngameScript
                 //Me.CustomData = state;
             }
 
-            GridTerminalSystem.GetBlockGroupWithName("Drills").GetBlocksOfType(drills);
-            GridTerminalSystem.GetBlockGroupWithName("Landing Gears Front").GetBlocksOfType(gearsFront);
-            GridTerminalSystem.GetBlockGroupWithName("Landing Gears Rear").GetBlocksOfType(gearsRear);
-            GridTerminalSystem.GetBlockGroupWithName("Pistons Axial").GetBlocksOfType(pistonsAxial);
-            GridTerminalSystem.GetBlockGroupWithName("Pistons Front").GetBlocksOfType(pistonsFront);
-            GridTerminalSystem.GetBlockGroupWithName("Pistons Rear").GetBlocksOfType(pistonsRear);
+            GridTerminalSystem.GetBlockGroupWithName("Drills").GetBlocksOfType(_drills);
+            GridTerminalSystem.GetBlockGroupWithName("Landing Gears Front").GetBlocksOfType(_gearsFront);
+            GridTerminalSystem.GetBlockGroupWithName("Landing Gears Rear").GetBlocksOfType(_gearsRear);
+            GridTerminalSystem.GetBlockGroupWithName("Pistons Axial").GetBlocksOfType(_pistonsAxial);
+            GridTerminalSystem.GetBlockGroupWithName("Pistons Front").GetBlocksOfType(_pistonsFront);
+            GridTerminalSystem.GetBlockGroupWithName("Pistons Rear").GetBlocksOfType(_pistonsRear);
         }
 
         public void Save()
@@ -61,6 +61,11 @@ namespace IngameScript
             Echo("CurrentInstructionCount: " + Runtime.CurrentInstructionCount);
             Echo("MaxInstructionCount: " + Runtime.MaxInstructionCount);
 
+            if (updateSource == UpdateType.Terminal)
+            {
+                state = argument;
+            }
+
             // The cases for this state machine are arranged as follows:
             // * check for end condition, and exit ASAP if not met;
             // * perform commands of _following_ step;
@@ -68,77 +73,106 @@ namespace IngameScript
             switch (state)
             {
                 case "DRILLING":
-                    if (!PistonsInHighestPosition(pistonsAxial))
+                    if (!ArePistonsInHighestPosition(_pistonsAxial))
                             return;
 
-                    drills.ForEach(drill => drill.Enabled = false);
-                    GearsAutolock(gearsFront);
-                    pistonsFront.ForEach(piston => piston.Extend());
+                    DrillsDisable(_drills);
+                    GearsAutolock(_gearsFront);
+                    PistonsExtend(_pistonsFront);
                     state = "LOCKING FRONT";
 
                     break; // case "DRILLING"
 
                 case "LOCKING FRONT":
-                    // FIXME: wrong condition, need "front gear locked"
-                    if (!PistonsInHighestPosition(pistonsFront))
+                    if (!AreAnyGearsLocked(_gearsFront))
                         return;
 
-                    GearsUnlock(gearsRear);
-                    pistonsRear.ForEach(piston => piston.Retract());
+                    GearsUnlock(_gearsRear);
+                    PistonsRetract(_pistonsRear);
                     state = "UNLOCKING REAR";
 
                     break; // case "LOCKING FRONT"
 
                 case "UNLOCKING REAR":
-                    if (!PistonsInLowestPosition(pistonsRear))
+                    if (!ArePistonsInLowestPosition(_pistonsRear))
                         return;
 
-                    pistonsAxial.ForEach(piston => piston.Retract());
+                    PistonsRetract(_pistonsAxial);
                     state = "CONTRACTING";
 
                     break; // case "UNLOCKING REAR"
 
                 case "CONTRACTING":
-                    if (!PistonsInLowestPosition(pistonsAxial))
+                    if (!ArePistonsInLowestPosition(_pistonsAxial))
                         return;
 
-                    GearsAutolock(gearsRear);
-                    pistonsRear.ForEach(piston => piston.Extend());
+                    GearsAutolock(_gearsRear);
+                    PistonsExtend(_pistonsRear);
                     state = "LOCKING REAR";
 
                     break; // case "CONTRACTING"
 
                 case "LOCKING REAR":
-                    // FIXME: wrong condition, need "gear locked"
-                    if (!PistonsInHighestPosition(pistonsRear))
+                    if (!AreAnyGearsLocked(_gearsRear))
                         return;
 
-                    GearsUnlock(gearsFront);
-                    pistonsFront.ForEach(piston => piston.Retract());
+                        GearsUnlock(_gearsFront);
+                    PistonsRetract(_pistonsFront);
                     state = "UNLOCKING FRONT";
 
                     break; // case "LOCKING REAR"
 
                 case "UNLOCKING FRONT":
-                    if (!PistonsInLowestPosition(pistonsFront))
+                    if (!ArePistonsInLowestPosition(_pistonsFront))
                         return;
-                    
-                    drills.ForEach(drill => drill.Enabled = true);
-                    pistonsAxial.ForEach(piston => piston.Extend());
+
+                    DrillsEnable(_drills);
+                    PistonsExtend(_pistonsAxial);
                     state = "DRILLING";
 
                     break; // case "UNLOCKING FRONT"
 
+                case "RESET":
+                    DrillsDisable(_drills);
+                    GearsUnlock(_gearsFront);
+                    GearsUnlock(_gearsRear);
+                    PistonsRetract(_pistonsAxial);
+                    PistonsRetract(_pistonsFront);
+                    PistonsRetract(_pistonsRear);
+                    state = "HALT";
+
+                    break;
+
+                case "START":
+                    GearsAutolock(_gearsRear);
+                    PistonsExtend(_pistonsRear);
+                    state = "LOCKING REAR";
+
+                    break;
+
                 case "ERROR":
+                    // TODO: error reporting
                     break;
 
                 default:
-                    state = Me.CustomData;
                     break;
             }
         }
 
-        bool PistonsInLowestPosition(List<IMyExtendedPistonBase> pistons)
+        #region drills
+        void DrillsEnable(List<IMyShipDrill> drills)
+        {
+            drills.ForEach(drill => drill.Enabled = true);
+        }
+
+        void DrillsDisable(List<IMyShipDrill> drills)
+        {
+            drills.ForEach(drill => drill.Enabled = false);
+        }
+        #endregion
+
+        #region pistons
+        bool ArePistonsInLowestPosition(List<IMyExtendedPistonBase> pistons)
         {
             foreach (var piston in pistons)
                 if (piston.CurrentPosition != piston.LowestPosition)
@@ -146,7 +180,7 @@ namespace IngameScript
             return true;
         }
 
-        bool PistonsInHighestPosition(List<IMyExtendedPistonBase> pistons)
+        bool ArePistonsInHighestPosition(List<IMyExtendedPistonBase> pistons)
         {
             foreach (var piston in pistons)
                 if (piston.CurrentPosition != piston.HighestPosition)
@@ -154,6 +188,26 @@ namespace IngameScript
             return true;
         }
 
+        void PistonsExtend(List<IMyExtendedPistonBase> pistons)
+        {
+            pistons.ForEach(piston => piston.Extend());
+        }
+
+        void PistonsRetract(List<IMyExtendedPistonBase> pistons)
+        {
+            pistons.ForEach(piston => piston.Retract());
+        }
+        #endregion
+
+        #region gears
+        bool AreAnyGearsLocked(List<IMyLandingGear> gears)
+        {
+            foreach (var gear in gears)
+                if (gear.IsLocked)
+                    return true;
+                          
+            return false;
+        }
         void GearsAutolock(List<IMyLandingGear> gears)
         {
             gears.ForEach(gear => gear.AutoLock = true);
@@ -163,5 +217,6 @@ namespace IngameScript
             gears.ForEach(gear => gear.AutoLock = false);
             gears.ForEach(gear => gear.Unlock());
         }
+        #endregion
     }
 }
