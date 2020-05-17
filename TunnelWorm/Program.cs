@@ -77,12 +77,12 @@ namespace IngameScript
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("State: " + _state);
-            Echo("LastRunTimeMs: " + Runtime.LastRunTimeMs);
-            Echo("InstructionCount: " + Runtime.CurrentInstructionCount + "/" + Runtime.MaxInstructionCount);
+            Echo($"State: {_state}");
+            Echo($"LastRunTimeMs: {Runtime.LastRunTimeMs}");
+            Echo($"InstructionCount: {Runtime.CurrentInstructionCount} / {Runtime.MaxInstructionCount}");
+            Echo($"Tick internals: {_ticksSlept} / {_ticksToSleep}");
 
             // DEBUG
-            //Echo($"Tick internals: {_ticksSlept} / {_ticksToSleep}");
             //Echo("Previous piston positions:");
             //_prevPositions.ForEach(position => Echo($"{position}"));
 
