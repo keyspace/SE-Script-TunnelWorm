@@ -79,8 +79,12 @@ namespace IngameScript
         {
             Echo("State: " + _state);
             Echo("LastRunTimeMs: " + Runtime.LastRunTimeMs);
-            Echo("CurrentInstructionCount: " + Runtime.CurrentInstructionCount);
-            Echo("MaxInstructionCount: " + Runtime.MaxInstructionCount);
+            Echo("InstructionCount: " + Runtime.CurrentInstructionCount + "/" + Runtime.MaxInstructionCount);
+
+            // DEBUG
+            Echo($"Tick internals: {_ticksSlept} / {_ticksToSleep}");
+            Echo("Previous piston positions:");
+            _prevPositions.ForEach(position => Echo($"{position}"));
 
             if (updateSource == UpdateType.Terminal)
             {
@@ -134,8 +138,8 @@ namespace IngameScript
 
                     _ticksSlept++;
 
-                    if (AreAnyGearsMoving(_gearsFront))
-                        break;
+                    //if (AreAnyGearsMoving(_gearsFront))
+                    //    break;
 
                     if (_ticksSlept >= _ticksToSleep)
                     {
@@ -195,8 +199,8 @@ namespace IngameScript
 
                     _ticksSlept++;
 
-                    if (AreAnyGearsMoving(_gearsRear))
-                        break;
+                    //if (AreAnyGearsMoving(_gearsRear))
+                    //    break;
 
                     if (_ticksSlept >= _ticksToSleep)
                     {
@@ -305,11 +309,11 @@ namespace IngameScript
 
             _currPositions.Clear();
             gears.ForEach(gear => _currPositions.Add(gear.GetPosition()));
-
-            var gearsNotMoving = _currPositions.Zip(_prevPositions, (curr, prev) => curr.Equals(prev));
-            foreach (var gearIsNotMoving in gearsNotMoving)
+            
+            var positionDistances = _currPositions.Zip(_prevPositions, (curr, prev) => Vector3D.DistanceSquared(curr, prev));
+            foreach (var distance in positionDistances)
             {
-                if (!gearIsNotMoving)
+                if (distance > 0.1d)
                 {
                     atLeastOneGearIsMoving = true;
                     break;
@@ -317,8 +321,8 @@ namespace IngameScript
             }
 
             _prevPositions.Clear();
-            _prevPositions = _currPositions;
-            //_currPositions.ForEach(position => _prevPositions.Add(position));
+            //_prevPositions = _currPositions;
+            _currPositions.ForEach(position => _prevPositions.Add(position));
 
             return atLeastOneGearIsMoving;
         }
