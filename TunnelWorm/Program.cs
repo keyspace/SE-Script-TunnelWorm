@@ -38,10 +38,22 @@ namespace IngameScript
             if (storedData.Length >= 1)
             {
                 state = storedData[0];
-                //Me.CustomData = state;
             }
 
-            // TODO: catch exception when missing group(s)
+            List<string> blockGroupNames = GetMissingBlockGroups(
+                "Drills",
+                "Landing Gears Front",
+                "Landing Gears Rear",
+                "Pistons Axial",
+                "Pistons Front",
+                "Pistons Rear"
+                );
+            if (blockGroupNames.Count != 0)
+            {
+                Echo("Missing block groups! Not present:");
+                blockGroupNames.ForEach(name => Echo($"{name}"));
+            }
+
             GridTerminalSystem.GetBlockGroupWithName("Drills").GetBlocksOfType(_drills);
             GridTerminalSystem.GetBlockGroupWithName("Landing Gears Front").GetBlocksOfType(_gearsFront);
             GridTerminalSystem.GetBlockGroupWithName("Landing Gears Rear").GetBlocksOfType(_gearsRear);
@@ -64,8 +76,7 @@ namespace IngameScript
 
             if (updateSource == UpdateType.Terminal)
             {
-                // TODO: allow any case
-                state = argument;
+                state = argument.ToUpper();
             }
 
             // The cases for this state machine are arranged as follows:
@@ -210,14 +221,33 @@ namespace IngameScript
                           
             return false;
         }
+
         void GearsAutolock(List<IMyLandingGear> gears)
         {
             gears.ForEach(gear => gear.AutoLock = true);
         }
+
         void GearsUnlock(List<IMyLandingGear> gears)
         {
             gears.ForEach(gear => gear.AutoLock = false);
             gears.ForEach(gear => gear.Unlock());
+        }
+        #endregion
+
+        #region utils
+        List<string> GetMissingBlockGroups(params string[] groupNames)
+        {
+            List<string> missingGroupNames = new List<string>();
+            for (int i = 0; i < groupNames.Length; i++)
+            {
+                string groupName = groupNames[i];
+                IMyBlockGroup group = GridTerminalSystem.GetBlockGroupWithName(groupName);
+                if (group == null)
+                {
+                    missingGroupNames.Add(groupName);
+                }
+            }
+            return missingGroupNames;
         }
         #endregion
     }
