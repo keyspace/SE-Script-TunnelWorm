@@ -133,20 +133,7 @@ namespace IngameScript
                     break; // case "LOCKING FRONT"
 
                 case "FIDDLING FRONT":
-                    if (AreAnyGearsLocked(_gearsFront))
-                    {
-                        _state = "LOCKING FRONT";
-                        return;
-                    }
-
-                    _ticksSlept++;
-
-                    if (_ticksSlept >= _ticksToSleep)
-                    {
-                        PistonsReverse(_pistonsFront);
-                        _ticksSlept = 0;
-                        _ticksToSleep++;
-                    }
+                    FiddleWithGearsAndPistons(_gearsFront, _pistonsFront, "LOCKING FRONT");
 
                     break; // case "FIDDLING FRONT"
 
@@ -191,21 +178,8 @@ namespace IngameScript
                     break; // case "LOCKING REAR"
 
                 case "FIDDLING REAR":
-                    if (AreAnyGearsLocked(_gearsRear))
-                    {
-                        _state = "LOCKING REAR";
-                        return;
-                    }
-
-                    _ticksSlept++;
-
-                    if (_ticksSlept >= _ticksToSleep)
-                    {
-                        PistonsReverse(_pistonsRear);
-                        _ticksSlept = 0;
-                        _ticksToSleep++;
-                    }
-
+                    FiddleWithGearsAndPistons(_gearsRear, _pistonsRear, "LOCKING REAR");
+                    
                     break; // case "FIDDLING REAR"
 
                 case "UNLOCKING FRONT":
@@ -242,6 +216,24 @@ namespace IngameScript
 
                 default:
                     break;
+            }
+        }
+
+        void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string exitState)
+        {
+            if (AreAnyGearsLocked(gears))
+            {
+                _state = exitState;
+                return;
+            }
+
+            _ticksSlept++;
+
+            if (_ticksSlept >= _ticksToSleep)
+            {
+                PistonsReverse(pistons);
+                _ticksSlept = 0;
+                _ticksToSleep++;
             }
         }
 
