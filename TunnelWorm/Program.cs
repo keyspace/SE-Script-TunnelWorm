@@ -21,7 +21,7 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
-        string state;
+        string _state;
 
         List<IMyShipDrill> _drills = new List<IMyShipDrill>();
         List<IMyLandingGear> _gearsFront = new List<IMyLandingGear>();
@@ -37,7 +37,7 @@ namespace IngameScript
             string[] storedData = Storage.Split(';');
             if (storedData.Length >= 1)
             {
-                state = storedData[0];
+                _state = storedData[0];
             }
 
             List<string> blockGroupNames = GetMissingBlockGroups(
@@ -64,26 +64,26 @@ namespace IngameScript
 
         public void Save()
         {
-            Storage = string.Join(";", state ?? "ERROR");
+            Storage = string.Join(";", _state ?? "ERROR");
         }
 
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo("State: " + state);
+            Echo("State: " + _state);
             Echo("LastRunTimeMs: " + Runtime.LastRunTimeMs);
             Echo("CurrentInstructionCount: " + Runtime.CurrentInstructionCount);
             Echo("MaxInstructionCount: " + Runtime.MaxInstructionCount);
 
             if (updateSource == UpdateType.Terminal)
             {
-                state = argument.ToUpper();
+                _state = argument.ToUpper();
             }
 
             // The cases for this state machine are arranged as follows:
-            // * check for end condition, and exit ASAP if not met;
+            // * check for exit condition, and return ASAP if not met;
             // * perform commands of _following_ step;
             // * set state variable.
-            switch (state)
+            switch (_state)
             {
                 case "DRILLING":
                     if (!ArePistonsInHighestPosition(_pistonsAxial))
@@ -92,7 +92,7 @@ namespace IngameScript
                     DrillsDisable(_drills);
                     GearsAutolock(_gearsFront);
                     PistonsExtend(_pistonsFront);
-                    state = "LOCKING FRONT";
+                    _state = "LOCKING FRONT";
 
                     break; // case "DRILLING"
 
@@ -102,7 +102,7 @@ namespace IngameScript
 
                     GearsUnlock(_gearsRear);
                     PistonsRetract(_pistonsRear);
-                    state = "UNLOCKING REAR";
+                    _state = "UNLOCKING REAR";
 
                     break; // case "LOCKING FRONT"
 
@@ -111,7 +111,7 @@ namespace IngameScript
                         return;
 
                     PistonsRetract(_pistonsAxial);
-                    state = "CONTRACTING";
+                    _state = "CONTRACTING";
 
                     break; // case "UNLOCKING REAR"
 
@@ -121,7 +121,7 @@ namespace IngameScript
 
                     GearsAutolock(_gearsRear);
                     PistonsExtend(_pistonsRear);
-                    state = "LOCKING REAR";
+                    _state = "LOCKING REAR";
 
                     break; // case "CONTRACTING"
 
@@ -131,7 +131,7 @@ namespace IngameScript
 
                     GearsUnlock(_gearsFront);
                     PistonsRetract(_pistonsFront);
-                    state = "UNLOCKING FRONT";
+                    _state = "UNLOCKING FRONT";
 
                     break; // case "LOCKING REAR"
 
@@ -141,7 +141,7 @@ namespace IngameScript
 
                     DrillsEnable(_drills);
                     PistonsExtend(_pistonsAxial);
-                    state = "DRILLING";
+                    _state = "DRILLING";
 
                     break; // case "UNLOCKING FRONT"
 
@@ -152,14 +152,14 @@ namespace IngameScript
                     PistonsRetract(_pistonsAxial);
                     PistonsRetract(_pistonsFront);
                     PistonsRetract(_pistonsRear);
-                    state = "HALT";
+                    _state = "HALT";
 
                     break;
 
                 case "START":
                     GearsAutolock(_gearsRear);
                     PistonsExtend(_pistonsRear);
-                    state = "LOCKING REAR";
+                    _state = "LOCKING REAR";
 
                     break;
 
