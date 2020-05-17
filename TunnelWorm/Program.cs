@@ -32,7 +32,7 @@ namespace IngameScript
         List<IMyExtendedPistonBase> _pistonsFront = new List<IMyExtendedPistonBase>();
         List<IMyExtendedPistonBase> _pistonsRear = new List<IMyExtendedPistonBase>();
 
-        // churn vars for exiting edge cases
+        // churn vars used to exit edge cases
         List<Vector3D> _currPositions = new List<Vector3D>();
         List<Vector3D> _prevPositions = new List<Vector3D>();
         int _ticksToSleep = 0;
@@ -82,24 +82,27 @@ namespace IngameScript
             Echo("InstructionCount: " + Runtime.CurrentInstructionCount + "/" + Runtime.MaxInstructionCount);
 
             // DEBUG
-            Echo($"Tick internals: {_ticksSlept} / {_ticksToSleep}");
-            Echo("Previous piston positions:");
-            _prevPositions.ForEach(position => Echo($"{position}"));
+            //Echo($"Tick internals: {_ticksSlept} / {_ticksToSleep}");
+            //Echo("Previous piston positions:");
+            //_prevPositions.ForEach(position => Echo($"{position}"));
 
             if (updateSource == UpdateType.Terminal)
             {
                 _state = argument.ToUpper();
             }
 
-            // The cases for this state machine are arranged as follows:
+            // In general, cases in this state machine are arranged as follows:
             // * check for exit condition, and return ASAP if not met;
             // * perform commands of _following_ step;
             // * set state variable.
+            // However, FIDDLING states - used to exit in-game edge cases - are different:
+            // * check for edge-case exit condition, and set "back" state if so;
+            // * otherwise, perform actions with an ever-increasing delay.
             switch (_state)
             {
                 case "DRILLING":
                     if (!ArePistonsInHighestPosition(_pistonsAxial))
-                            return;
+                        return;
 
                     DrillsDisable(_drills);
                     GearsAutolock(_gearsFront);
@@ -138,9 +141,6 @@ namespace IngameScript
 
                     _ticksSlept++;
 
-                    //if (AreAnyGearsMoving(_gearsFront))
-                    //    break;
-
                     if (_ticksSlept >= _ticksToSleep)
                     {
                         PistonsReverse(_pistonsFront);
@@ -148,7 +148,7 @@ namespace IngameScript
                         _ticksToSleep++;
                     }
 
-                    break;
+                    break; // case "FIDDLING FRONT"
 
                 case "UNLOCKING REAR":
                     if (!ArePistonsInLowestPosition(_pistonsRear))
@@ -199,9 +199,6 @@ namespace IngameScript
 
                     _ticksSlept++;
 
-                    //if (AreAnyGearsMoving(_gearsRear))
-                    //    break;
-
                     if (_ticksSlept >= _ticksToSleep)
                     {
                         PistonsReverse(_pistonsRear);
@@ -209,7 +206,7 @@ namespace IngameScript
                         _ticksToSleep++;
                     }
 
-                    break;
+                    break; // case "FIDDLING REAR"
 
                 case "UNLOCKING FRONT":
                     if (!ArePistonsInLowestPosition(_pistonsFront))
@@ -303,25 +300,30 @@ namespace IngameScript
             return false;
         }
 
+        // FIXME: This uses a few of the instance's variables for comparison!
+        // If different sets of gears are checked interchangeably, this will break.
         bool AreAnyGearsMoving(List<IMyLandingGear> gears)
         {
             bool atLeastOneGearIsMoving = false;
 
+            // re-populate current positions
             _currPositions.Clear();
             gears.ForEach(gear => _currPositions.Add(gear.GetPosition()));
             
+            // compare to previous positions, marking if there's any notable difference
             var positionDistances = _currPositions.Zip(_prevPositions, (curr, prev) => Vector3D.DistanceSquared(curr, prev));
             foreach (var distance in positionDistances)
             {
-                if (distance > 0.1d)
+                // MAGICNUM 0.1d: distance travelled threshold, chosen arbitrarily
+                if (distance >= 0.1d)
                 {
                     atLeastOneGearIsMoving = true;
                     break;
                 }
             }
 
+            // save positions for next iteration
             _prevPositions.Clear();
-            //_prevPositions = _currPositions;
             _currPositions.ForEach(position => _prevPositions.Add(position));
 
             return atLeastOneGearIsMoving;
