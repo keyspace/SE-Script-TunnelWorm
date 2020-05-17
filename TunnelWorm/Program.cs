@@ -21,14 +21,22 @@ namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
+        // state machine
         string _state;
 
+        // permanent part lists used in sequencing
         List<IMyShipDrill> _drills = new List<IMyShipDrill>();
         List<IMyLandingGear> _gearsFront = new List<IMyLandingGear>();
         List<IMyLandingGear> _gearsRear = new List<IMyLandingGear>();
         List<IMyExtendedPistonBase> _pistonsAxial = new List<IMyExtendedPistonBase>();
         List<IMyExtendedPistonBase> _pistonsFront = new List<IMyExtendedPistonBase>();
         List<IMyExtendedPistonBase> _pistonsRear = new List<IMyExtendedPistonBase>();
+
+        // churn vars for exiting edge cases
+        List<Vector3D> _currPositions = new List<Vector3D>();
+        List<Vector3D> _prevPositions = new List<Vector3D>();
+        int _ticksToSleep = 0;
+        int _ticksSlept = 0;
 
         public Program()
         {
@@ -98,13 +106,45 @@ namespace IngameScript
 
                 case "LOCKING FRONT":
                     if (!AreAnyGearsLocked(_gearsFront))
+                    {
+                        if (!AreAnyGearsMoving(_gearsFront))
+                        {
+                            PistonsReverse(_pistonsAxial);
+                            PistonsReverse(_pistonsFront);
+                            _ticksSlept = 0;
+                            _ticksToSleep = 1;
+                            _state = "FIDDLING FRONT";
+                        }
+
                         return;
+                    }
 
                     GearsUnlock(_gearsRear);
                     PistonsRetract(_pistonsRear);
                     _state = "UNLOCKING REAR";
 
                     break; // case "LOCKING FRONT"
+
+                case "FIDDLING FRONT":
+                    if (AreAnyGearsLocked(_gearsFront))
+                    {
+                        _state = "LOCKING FRONT";
+                        return;
+                    }
+
+                    _ticksSlept++;
+
+                    if (AreAnyGearsMoving(_gearsFront))
+                        break;
+
+                    if (_ticksSlept >= _ticksToSleep)
+                    {
+                        PistonsReverse(_pistonsFront);
+                        _ticksSlept = 0;
+                        _ticksToSleep++;
+                    }
+
+                    break;
 
                 case "UNLOCKING REAR":
                     if (!ArePistonsInLowestPosition(_pistonsRear))
@@ -127,13 +167,45 @@ namespace IngameScript
 
                 case "LOCKING REAR":
                     if (!AreAnyGearsLocked(_gearsRear))
+                    {
+                        if (!AreAnyGearsMoving(_gearsRear))
+                        {
+                            PistonsReverse(_pistonsAxial);
+                            PistonsReverse(_pistonsRear);
+                            _ticksSlept = 0;
+                            _ticksToSleep = 1;
+                            _state = "FIDDLING REAR";
+                        }
+
                         return;
+                    }
 
                     GearsUnlock(_gearsFront);
                     PistonsRetract(_pistonsFront);
                     _state = "UNLOCKING FRONT";
 
                     break; // case "LOCKING REAR"
+
+                case "FIDDLING REAR":
+                    if (AreAnyGearsLocked(_gearsRear))
+                    {
+                        _state = "LOCKING REAR";
+                        return;
+                    }
+
+                    _ticksSlept++;
+
+                    if (AreAnyGearsMoving(_gearsRear))
+                        break;
+
+                    if (_ticksSlept >= _ticksToSleep)
+                    {
+                        PistonsReverse(_pistonsRear);
+                        _ticksSlept = 0;
+                        _ticksToSleep++;
+                    }
+
+                    break;
 
                 case "UNLOCKING FRONT":
                     if (!ArePistonsInLowestPosition(_pistonsFront))
@@ -210,6 +282,11 @@ namespace IngameScript
         {
             pistons.ForEach(piston => piston.Retract());
         }
+
+        void PistonsReverse(List<IMyExtendedPistonBase> pistons)
+        {
+            pistons.ForEach(piston => piston.Reverse());
+        }
         #endregion
 
         #region gears
@@ -220,6 +297,30 @@ namespace IngameScript
                     return true;
                           
             return false;
+        }
+
+        bool AreAnyGearsMoving(List<IMyLandingGear> gears)
+        {
+            bool atLeastOneGearIsMoving = false;
+
+            _currPositions.Clear();
+            gears.ForEach(gear => _currPositions.Add(gear.GetPosition()));
+
+            var gearsNotMoving = _currPositions.Zip(_prevPositions, (curr, prev) => curr.Equals(prev));
+            foreach (var gearIsNotMoving in gearsNotMoving)
+            {
+                if (!gearIsNotMoving)
+                {
+                    atLeastOneGearIsMoving = true;
+                    break;
+                }
+            }
+
+            _prevPositions.Clear();
+            _prevPositions = _currPositions;
+            //_currPositions.ForEach(position => _prevPositions.Add(position));
+
+            return atLeastOneGearIsMoving;
         }
 
         void GearsAutolock(List<IMyLandingGear> gears)
