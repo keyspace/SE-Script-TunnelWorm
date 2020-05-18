@@ -245,7 +245,7 @@ namespace IngameScript
             }
         }
 
-        void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string returnToState)
+        private void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string returnToState)
         {
             if (AreAnyGearsLocked(gears))
             {
@@ -263,26 +263,26 @@ namespace IngameScript
             }
         }
 
-        void PumpPistons(List<IMyExtendedPistonBase> pistons, string returnToState)
+        private void PumpPistons(List<IMyExtendedPistonBase> pistons, string returnToState)
         {
             PistonsReverse(pistons);
             _state = returnToState;
         }
 
         #region drills
-        void DrillsEnable(List<IMyShipDrill> drills)
+        private void DrillsEnable(List<IMyShipDrill> drills)
         {
             drills.ForEach(drill => drill.Enabled = true);
         }
 
-        void DrillsDisable(List<IMyShipDrill> drills)
+        private void DrillsDisable(List<IMyShipDrill> drills)
         {
             drills.ForEach(drill => drill.Enabled = false);
         }
         #endregion
 
         #region pistons
-        bool ArePistonsInLowestPosition(List<IMyExtendedPistonBase> pistons)
+        private bool ArePistonsInLowestPosition(List<IMyExtendedPistonBase> pistons)
         {
             foreach (var piston in pistons)
                 if (piston.CurrentPosition != piston.LowestPosition)
@@ -290,7 +290,7 @@ namespace IngameScript
             return true;
         }
 
-        bool ArePistonsInHighestPosition(List<IMyExtendedPistonBase> pistons)
+        private bool ArePistonsInHighestPosition(List<IMyExtendedPistonBase> pistons)
         {
             foreach (var piston in pistons)
                 if (piston.CurrentPosition != piston.HighestPosition)
@@ -298,24 +298,24 @@ namespace IngameScript
             return true;
         }
 
-        void PistonsExtend(List<IMyExtendedPistonBase> pistons)
+        private void PistonsExtend(List<IMyExtendedPistonBase> pistons)
         {
             pistons.ForEach(piston => piston.Extend());
         }
 
-        void PistonsRetract(List<IMyExtendedPistonBase> pistons)
+        private void PistonsRetract(List<IMyExtendedPistonBase> pistons)
         {
             pistons.ForEach(piston => piston.Retract());
         }
 
-        void PistonsReverse(List<IMyExtendedPistonBase> pistons)
+        private void PistonsReverse(List<IMyExtendedPistonBase> pistons)
         {
             pistons.ForEach(piston => piston.Reverse());
         }
         #endregion
 
         #region gears
-        bool AreAnyGearsLocked(List<IMyLandingGear> gears)
+        private bool AreAnyGearsLocked(List<IMyLandingGear> gears)
         {
             foreach (var gear in gears)
                 if (gear.IsLocked)
@@ -326,7 +326,7 @@ namespace IngameScript
 
         // FIXME: This uses a few of the instance's variables for comparison!
         // If different sets of gears are checked interchangeably, this will break.
-        bool AreAnyGearsMoving(List<IMyLandingGear> gears)
+        private bool AreAnyGearsMoving(List<IMyLandingGear> gears)
         {
             bool atLeastOneGearIsMoving = false;
 
@@ -353,12 +353,12 @@ namespace IngameScript
             return atLeastOneGearIsMoving;
         }
 
-        void GearsAutolock(List<IMyLandingGear> gears)
+        private void GearsAutolock(List<IMyLandingGear> gears)
         {
             gears.ForEach(gear => gear.AutoLock = true);
         }
 
-        void GearsUnlock(List<IMyLandingGear> gears)
+        private void GearsUnlock(List<IMyLandingGear> gears)
         {
             gears.ForEach(gear => gear.AutoLock = false);
             gears.ForEach(gear => gear.Unlock());
@@ -366,7 +366,7 @@ namespace IngameScript
         #endregion
 
         #region utils
-        List<string> GetMissingBlockGroups(params string[] groupNames)
+        private List<string> GetMissingBlockGroups(params string[] groupNames)
         {
             List<string> missingGroupNames = new List<string>();
             for (int i = 0; i < groupNames.Length; i++)
