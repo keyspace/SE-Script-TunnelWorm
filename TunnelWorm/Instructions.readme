@@ -3,6 +3,12 @@
 
 There is nothing explicitly configurable. Be sure to have all the required block groups.
 
+To start, run the script with command (any case) RUN or START.
+
+To stop, run with HALT or STOP.
+
+To reset into initial position, run with RESET.
+
 Code on github:
 
 https://github.com/keyspace/SE-Script-TunnelWorm
