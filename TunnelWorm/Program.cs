@@ -280,7 +280,7 @@ namespace IngameScript
             }
         }
 
-        private void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string returnToState)
+        private void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> lateralPistons, string returnToState)
         {
             if (AreAnyGearsLocked(gears))
             {
@@ -292,9 +292,14 @@ namespace IngameScript
 
             if (_ticksSlept >= _ticksToSleep)
             {
-                PistonsReverse(pistons);
+                PistonsReverse(lateralPistons);
                 _ticksSlept = 0;
                 _ticksToSleep++;
+            }
+
+            if (ArePistonsInLowestPosition(_pistonsAxial) || ArePistonsInHighestPosition(_pistonsAxial))
+            {
+                PistonsReverse(_pistonsAxial);
             }
         }
 
