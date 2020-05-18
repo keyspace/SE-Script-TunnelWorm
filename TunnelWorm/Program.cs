@@ -103,12 +103,12 @@ namespace IngameScript
                 case "DRILLING":
                     if (!ArePistonsInHighestPosition(_pistonsAxial))
                     {
-                        //if (!AreAnyGearsMoving(_gearsFront))
-                        //{
-                        //    DrillsDisable(_drills);
-                        //    PistonsReverse(_pistonsAxial);
-                        //    _state = "PUMPING AXIAL D";
-                        //}
+                        if (!AreAnyGearsMoving(_gearsFront))
+                        {
+                            DrillsDisable(_drills);
+                            PistonsReverse(_pistonsAxial);
+                            _state = "PUMPING AXIAL D";
+                        }
 
                         return; 
                     }
@@ -121,9 +121,8 @@ namespace IngameScript
                     break; // case "DRILLING"
 
                 case "PUMPING AXIAL D":
+                    PumpGearsAndPistons(_gearsFront, _pistonsAxial, "DRILLING");
                     DrillsEnable(_drills);
-                    PistonsReverse(_pistonsAxial);
-                    _state = "DRILLING";
 
                     break;
 
@@ -171,20 +170,18 @@ namespace IngameScript
                     break; // case "UNLOCKING REAR"
 
                 case "PUMPING REAR":
-                    //PumpGearsAndPistons(_gearsRear, _pistonsRear, "UNLOCKING REAR");
-                    PistonsReverse(_pistonsRear);
-                    _state = "UNLOCKING REAR";
+                    PumpGearsAndPistons(_gearsRear, _pistonsRear, "UNLOCKING REAR");
 
                     break;
 
                 case "CONTRACTING":
                     if (!ArePistonsInLowestPosition(_pistonsAxial))
                     {
-                        //if (!AreAnyGearsMoving(_gearsRear))
-                        //{
-                        //    PistonsReverse(_pistonsAxial);
-                        //    _state = "PUMPING AXIAL C";
-                        //}
+                        if (!AreAnyGearsMoving(_gearsRear))
+                        {
+                            PistonsReverse(_pistonsAxial);
+                            _state = "PUMPING AXIAL C";
+                        }
 
                         return;
                     }
@@ -196,8 +193,7 @@ namespace IngameScript
                     break; // case "CONTRACTING"
 
                 case "PUMPING AXIAL C":
-                    PistonsReverse(_pistonsAxial);
-                    _state = "CONTRACTING";
+                    PumpGearsAndPistons(_gearsRear, _pistonsAxial, "CONTRACTING");
 
                     break;
 
@@ -246,8 +242,7 @@ namespace IngameScript
                     break; // case "UNLOCKING FRONT"
 
                 case "PUMPING FRONT":
-                    PistonsReverse(_pistonsFront);
-                    _state = "UNLOCKING FRONT";
+                    PumpGearsAndPistons(_gearsFront, _pistonsFront, "UNLOCKING FRONT");
 
                     break;
 
@@ -381,8 +376,9 @@ namespace IngameScript
             var positionDistances = _currPositions.Zip(_prevPositions, (curr, prev) => Vector3D.DistanceSquared(curr, prev));
             foreach (var distance in positionDistances)
             {
-                // MAGICNUM 0.1d: distance travelled threshold, chosen arbitrarily
-                if (distance >= 0.1d)
+                // MAGICNUM 0.01d: distance travelled threshold, should be lower than
+                // slowest piston group travel speed, but higher than GetPosition() noise
+                if (distance >= 0.01d)
                 {
                     atLeastOneGearIsMoving = true;
                     break;
