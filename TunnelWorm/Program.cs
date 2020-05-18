@@ -102,7 +102,16 @@ namespace IngameScript
             {
                 case "DRILLING":
                     if (!ArePistonsInHighestPosition(_pistonsAxial))
-                        return;
+                    {
+                        //if (!AreAnyGearsMoving(_gearsFront))
+                        //{
+                        //    DrillsDisable(_drills);
+                        //    PistonsReverse(_pistonsAxial);
+                        //    _state = "PUMPING AXIAL D";
+                        //}
+
+                        return; 
+                    }
 
                     DrillsDisable(_drills);
                     GearsAutolock(_gearsFront);
@@ -110,6 +119,13 @@ namespace IngameScript
                     _state = "LOCKING FRONT";
 
                     break; // case "DRILLING"
+
+                case "PUMPING AXIAL D":
+                    DrillsEnable(_drills);
+                    PistonsReverse(_pistonsAxial);
+                    _state = "DRILLING";
+
+                    break;
 
                 case "LOCKING FRONT":
                     if (!AreAnyGearsLocked(_gearsFront))
@@ -155,19 +171,35 @@ namespace IngameScript
                     break; // case "UNLOCKING REAR"
 
                 case "PUMPING REAR":
-                    PumpPistons(_pistonsRear, "UNLOCKING REAR");
+                    //PumpGearsAndPistons(_gearsRear, _pistonsRear, "UNLOCKING REAR");
+                    PistonsReverse(_pistonsRear);
+                    _state = "UNLOCKING REAR";
 
                     break;
 
                 case "CONTRACTING":
                     if (!ArePistonsInLowestPosition(_pistonsAxial))
+                    {
+                        //if (!AreAnyGearsMoving(_gearsRear))
+                        //{
+                        //    PistonsReverse(_pistonsAxial);
+                        //    _state = "PUMPING AXIAL C";
+                        //}
+
                         return;
+                    }
 
                     GearsAutolock(_gearsRear);
                     PistonsExtend(_pistonsRear);
                     _state = "LOCKING REAR";
 
                     break; // case "CONTRACTING"
+
+                case "PUMPING AXIAL C":
+                    PistonsReverse(_pistonsAxial);
+                    _state = "CONTRACTING";
+
+                    break;
 
                 case "LOCKING REAR":
                     if (!AreAnyGearsLocked(_gearsRear))
@@ -214,7 +246,8 @@ namespace IngameScript
                     break; // case "UNLOCKING FRONT"
 
                 case "PUMPING FRONT":
-                    PumpPistons(_pistonsFront, "UNLOCKING FRONT");
+                    PistonsReverse(_pistonsFront);
+                    _state = "UNLOCKING FRONT";
 
                     break;
 
@@ -263,8 +296,11 @@ namespace IngameScript
             }
         }
 
-        private void PumpPistons(List<IMyExtendedPistonBase> pistons, string returnToState)
+        private void PumpGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string returnToState)
         {
+            // this will update gear positions, but we don't need the result, so discard it
+            AreAnyGearsMoving(gears);
+
             PistonsReverse(pistons);
             _state = returnToState;
         }
