@@ -155,8 +155,7 @@ namespace IngameScript
                     break; // case "UNLOCKING REAR"
 
                 case "PUMPING REAR":
-                    PistonsReverse(_pistonsRear);
-                    _state = "UNLOCKING REAR";
+                    PumpPistons(_pistonsRear, "UNLOCKING REAR");
 
                     break;
 
@@ -215,8 +214,7 @@ namespace IngameScript
                     break; // case "UNLOCKING FRONT"
 
                 case "PUMPING FRONT":
-                    PistonsReverse(_pistonsFront);
-                    _state = "UNLOCKING FRONT";
+                    PumpPistons(_pistonsFront, "UNLOCKING FRONT");
 
                     break;
 
@@ -247,11 +245,11 @@ namespace IngameScript
             }
         }
 
-        void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string exitState)
+        void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string returnToState)
         {
             if (AreAnyGearsLocked(gears))
             {
-                _state = exitState;
+                _state = returnToState;
                 return;
             }
 
@@ -263,6 +261,12 @@ namespace IngameScript
                 _ticksSlept = 0;
                 _ticksToSleep++;
             }
+        }
+
+        void PumpPistons(List<IMyExtendedPistonBase> pistons, string returnToState)
+        {
+            PistonsReverse(pistons);
+            _state = returnToState;
         }
 
         #region drills
