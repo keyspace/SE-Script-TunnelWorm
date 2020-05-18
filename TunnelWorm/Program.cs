@@ -139,12 +139,26 @@ namespace IngameScript
 
                 case "UNLOCKING REAR":
                     if (!ArePistonsInLowestPosition(_pistonsRear))
+                    {
+                        if (!AreAnyGearsMoving(_gearsRear))
+                        {
+                            PistonsReverse(_pistonsRear);
+                            _state = "PUMPING REAR";
+                        }
+                        
                         return;
+                    }
 
                     PistonsRetract(_pistonsAxial);
                     _state = "CONTRACTING";
 
                     break; // case "UNLOCKING REAR"
+
+                case "PUMPING REAR":
+                    PistonsReverse(_pistonsRear);
+                    _state = "UNLOCKING REAR";
+
+                    break;
 
                 case "CONTRACTING":
                     if (!ArePistonsInLowestPosition(_pistonsAxial))
@@ -184,13 +198,27 @@ namespace IngameScript
 
                 case "UNLOCKING FRONT":
                     if (!ArePistonsInLowestPosition(_pistonsFront))
+                    {
+                        if (!AreAnyGearsMoving(_gearsFront))
+                        {
+                            PistonsReverse(_pistonsFront);
+                            _state = "PUMPING FRONT";
+                        }
+
                         return;
+                    }
 
                     DrillsEnable(_drills);
                     PistonsExtend(_pistonsAxial);
                     _state = "DRILLING";
 
                     break; // case "UNLOCKING FRONT"
+
+                case "PUMPING FRONT":
+                    PistonsReverse(_pistonsFront);
+                    _state = "UNLOCKING FRONT";
+
+                    break;
 
                 case "RESET":
                     DrillsDisable(_drills);
