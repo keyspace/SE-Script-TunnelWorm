@@ -262,6 +262,7 @@ namespace IngameScript
 
                     break;
 
+                case "RUN":
                 case "START":
                     GearsAutolock(_gearsRear);
                     PistonsExtend(_pistonsRear);
@@ -269,11 +270,17 @@ namespace IngameScript
 
                     break;
 
+                case "HALT":
+                case "INVALID":
+                case "STOP":
+                    break;
+
                 case "ERROR":
-                    // TODO: error reporting
+                    // TODO: error reporting via beacon
                     break;
 
                 default:
+                    _state = "INVALID";
                     break;
             }
         }
