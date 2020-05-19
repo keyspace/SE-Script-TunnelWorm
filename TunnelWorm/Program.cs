@@ -118,7 +118,7 @@ namespace IngameScript
                     PistonsExtend(_pistonsFront);
                     _state = "LOCKING FRONT";
 
-                    break; // case "DRILLING"
+                    break;
 
                 case "PUMPING AXIAL D":
                     PumpGearsAndPistons(_gearsFront, _pistonsAxial, "DRILLING");
@@ -145,12 +145,12 @@ namespace IngameScript
                     PistonsRetract(_pistonsRear);
                     _state = "UNLOCKING REAR";
 
-                    break; // case "LOCKING FRONT"
+                    break;
 
                 case "FIDDLING FRONT":
                     FiddleWithGearsAndPistons(_gearsFront, _pistonsFront, "LOCKING FRONT");
 
-                    break; // case "FIDDLING FRONT"
+                    break;
 
                 case "UNLOCKING REAR":
                     if (!ArePistonsInLowestPosition(_pistonsRear))
@@ -167,7 +167,7 @@ namespace IngameScript
                     PistonsRetract(_pistonsAxial);
                     _state = "CONTRACTING";
 
-                    break; // case "UNLOCKING REAR"
+                    break;
 
                 case "PUMPING REAR":
                     PumpGearsAndPistons(_gearsRear, _pistonsRear, "UNLOCKING REAR");
@@ -190,7 +190,7 @@ namespace IngameScript
                     PistonsExtend(_pistonsRear);
                     _state = "LOCKING REAR";
 
-                    break; // case "CONTRACTING"
+                    break;
 
                 case "PUMPING AXIAL C":
                     PumpGearsAndPistons(_gearsRear, _pistonsAxial, "CONTRACTING");
@@ -216,12 +216,12 @@ namespace IngameScript
                     PistonsRetract(_pistonsFront);
                     _state = "UNLOCKING FRONT";
 
-                    break; // case "LOCKING REAR"
+                    break;
 
                 case "FIDDLING REAR":
                     FiddleWithGearsAndPistons(_gearsRear, _pistonsRear, "LOCKING REAR");
                     
-                    break; // case "FIDDLING REAR"
+                    break;
 
                 case "UNLOCKING FRONT":
                     if (!ArePistonsInLowestPosition(_pistonsFront))
@@ -239,7 +239,7 @@ namespace IngameScript
                     PistonsExtend(_pistonsAxial);
                     _state = "DRILLING";
 
-                    break; // case "UNLOCKING FRONT"
+                    break;
 
                 case "PUMPING FRONT":
                     PumpGearsAndPistons(_gearsFront, _pistonsFront, "UNLOCKING FRONT");
