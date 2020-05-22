@@ -59,7 +59,9 @@ namespace IngameScript
             if (blockGroupNames.Count != 0)
             {
                 Echo("Missing block groups! Not present:");
-                blockGroupNames.ForEach(name => Echo($"{name}"));
+                blockGroupNames.ForEach(name => Echo($"* {name}"));
+                Echo("Recompile when addressed. Exiting.");
+                return;
             }
 
             GridTerminalSystem.GetBlockGroupWithName("Drills").GetBlocksOfType(_drills);
@@ -74,7 +76,7 @@ namespace IngameScript
         {
             Storage = string.Join(";", _state ?? "ERROR");
         }
-
+        
         public void Main(string argument, UpdateType updateSource)
         {
             Echo($"State: {_state}");
