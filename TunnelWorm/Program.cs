@@ -16,13 +16,15 @@ using VRage.Game.ObjectBuilders.Definitions;
 using VRage.Game;
 using VRage;
 using VRageMath;
+using System.Security.Cryptography.X509Certificates;
+using Sandbox.Game.GUI;
 
 namespace IngameScript
 {
     partial class Program : MyGridProgram
     {
         // state machine
-        string _state;
+        FiniteStateMachine _fsm = new FiniteStateMachine();
 
         // permanent part lists used in sequencing
         List<IMyShipDrill> _drills = new List<IMyShipDrill>();
@@ -41,12 +43,6 @@ namespace IngameScript
         public Program()
         {
             Runtime.UpdateFrequency = UpdateFrequency.Once | UpdateFrequency.Update100;
-
-            string[] storedData = Storage.Split(';');
-            if (storedData.Length >= 1)
-            {
-                _state = storedData[0];
-            }
 
             List<string> blockGroupNames = GetMissingBlockGroups(
                 "Drills",
@@ -70,16 +66,32 @@ namespace IngameScript
             GridTerminalSystem.GetBlockGroupWithName("Pistons Axial").GetBlocksOfType(_pistonsAxial);
             GridTerminalSystem.GetBlockGroupWithName("Pistons Front").GetBlocksOfType(_pistonsFront);
             GridTerminalSystem.GetBlockGroupWithName("Pistons Rear").GetBlocksOfType(_pistonsRear);
+
+            SetupFSM();
+
+            string[] storedData = Storage.Split(';');
+            if (storedData.Length >= 1)
+            {
+                _fsm.SetCurrentStateName(storedData[0]);
+                if (_fsm.GetCurrentStateName() != storedData[0])
+                {
+                    _fsm.SetCurrentStateName("HALT");
+                }
+            }
+            else
+            {
+                _fsm.SetCurrentStateName("HALT");
+            }
         }
 
         public void Save()
         {
-            Storage = string.Join(";", _state ?? "ERROR");
+            Storage = string.Join(";", _fsm.GetCurrentStateName() ?? "ERROR");
         }
-        
+
         public void Main(string argument, UpdateType updateSource)
         {
-            Echo($"State: {_state}");
+            Echo($"State: {_fsm.GetCurrentStateName()}");
             Echo($"LastRunTimeMs: {Runtime.LastRunTimeMs}");
             Echo($"InstructionCount: {Runtime.CurrentInstructionCount} / {Runtime.MaxInstructionCount}");
             Echo($"Tick internals: {_ticksSlept} / {_ticksToSleep}");
@@ -90,206 +102,174 @@ namespace IngameScript
 
             if (updateSource == UpdateType.Terminal)
             {
-                _state = argument.ToUpper();
+                _fsm.SetCurrentStateName(GuessUserCommand(argument));
             }
 
-            // In general, cases in this state machine are arranged as follows:
-            // * check for exit condition, and return ASAP if not met;
-            // * perform commands of _following_ step;
-            // * set state variable.
-            // However, FIDDLING states - used to exit in-game edge cases - are different:
-            // * check for edge-case exit condition, and set "back" state if so;
-            // * otherwise, perform actions with an ever-increasing delay.
-            switch (_state)
-            {
-                case "DRILLING":
-                    if (!ArePistonsInHighestPosition(_pistonsAxial))
-                    {
-                        if (!AreAnyGearsMoving(_gearsFront))
-                        {
-                            DrillsDisable(_drills);
-                            PistonsReverse(_pistonsAxial);
-                            _state = "PUMPING AXIAL D";
-                        }
-
-                        return; 
-                    }
-
-                    DrillsDisable(_drills);
-                    GearsAutolock(_gearsFront);
-                    PistonsExtend(_pistonsFront);
-                    _state = "LOCKING FRONT";
-
-                    break;
-
-                case "PUMPING AXIAL D":
-                    PumpGearsAndPistons(_gearsFront, _pistonsAxial, "DRILLING");
-                    DrillsEnable(_drills);
-
-                    break;
-
-                case "LOCKING FRONT":
-                    if (!AreAnyGearsLocked(_gearsFront))
-                    {
-                        if (!AreAnyGearsMoving(_gearsFront))
-                        {
-                            PistonsReverse(_pistonsAxial);
-                            PistonsReverse(_pistonsFront);
-                            _ticksSlept = 0;
-                            _ticksToSleep = 1;
-                            _state = "FIDDLING FRONT";
-                        }
-
-                        return;
-                    }
-
-                    GearsUnlock(_gearsRear);
-                    PistonsRetract(_pistonsRear);
-                    _state = "UNLOCKING REAR";
-
-                    break;
-
-                case "FIDDLING FRONT":
-                    FiddleWithGearsAndPistons(_gearsFront, _pistonsFront, "LOCKING FRONT");
-
-                    break;
-
-                case "UNLOCKING REAR":
-                    if (!ArePistonsInLowestPosition(_pistonsRear))
-                    {
-                        if (!AreAnyGearsMoving(_gearsRear))
-                        {
-                            PistonsReverse(_pistonsRear);
-                            _state = "PUMPING REAR";
-                        }
-                        
-                        return;
-                    }
-
-                    PistonsRetract(_pistonsAxial);
-                    _state = "CONTRACTING";
-
-                    break;
-
-                case "PUMPING REAR":
-                    PumpGearsAndPistons(_gearsRear, _pistonsRear, "UNLOCKING REAR");
-
-                    break;
-
-                case "CONTRACTING":
-                    if (!ArePistonsInLowestPosition(_pistonsAxial))
-                    {
-                        if (!AreAnyGearsMoving(_gearsRear))
-                        {
-                            PistonsReverse(_pistonsAxial);
-                            _state = "PUMPING AXIAL C";
-                        }
-
-                        return;
-                    }
-
-                    GearsAutolock(_gearsRear);
-                    PistonsExtend(_pistonsRear);
-                    _state = "LOCKING REAR";
-
-                    break;
-
-                case "PUMPING AXIAL C":
-                    PumpGearsAndPistons(_gearsRear, _pistonsAxial, "CONTRACTING");
-
-                    break;
-
-                case "LOCKING REAR":
-                    if (!AreAnyGearsLocked(_gearsRear))
-                    {
-                        if (!AreAnyGearsMoving(_gearsRear))
-                        {
-                            PistonsReverse(_pistonsAxial);
-                            PistonsReverse(_pistonsRear);
-                            _ticksSlept = 0;
-                            _ticksToSleep = 1;
-                            _state = "FIDDLING REAR";
-                        }
-
-                        return;
-                    }
-
-                    GearsUnlock(_gearsFront);
-                    PistonsRetract(_pistonsFront);
-                    _state = "UNLOCKING FRONT";
-
-                    break;
-
-                case "FIDDLING REAR":
-                    FiddleWithGearsAndPistons(_gearsRear, _pistonsRear, "LOCKING REAR");
-                    
-                    break;
-
-                case "UNLOCKING FRONT":
-                    if (!ArePistonsInLowestPosition(_pistonsFront))
-                    {
-                        if (!AreAnyGearsMoving(_gearsFront))
-                        {
-                            PistonsReverse(_pistonsFront);
-                            _state = "PUMPING FRONT";
-                        }
-
-                        return;
-                    }
-
-                    DrillsEnable(_drills);
-                    PistonsExtend(_pistonsAxial);
-                    _state = "DRILLING";
-
-                    break;
-
-                case "PUMPING FRONT":
-                    PumpGearsAndPistons(_gearsFront, _pistonsFront, "UNLOCKING FRONT");
-
-                    break;
-
-                case "RESET":
-                    DrillsDisable(_drills);
-                    GearsUnlock(_gearsFront);
-                    GearsUnlock(_gearsRear);
-                    PistonsRetract(_pistonsAxial);
-                    PistonsRetract(_pistonsFront);
-                    PistonsRetract(_pistonsRear);
-                    _state = "HALT";
-
-                    break;
-
-                case "RUN":
-                case "START":
-                    GearsAutolock(_gearsRear);
-                    PistonsExtend(_pistonsRear);
-                    _state = "LOCKING REAR";
-
-                    break;
-
-                case "HALT":
-                case "INVALID":
-                case "STOP":
-                    break;
-
-                case "ERROR":
-                    // TODO: error reporting via beacon
-                    break;
-
-                default:
-                    _state = "INVALID";
-                    break;
-            }
+            _fsm.DoFirstPossibleStateTransition();
         }
 
-        private void FiddleWithGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> lateralPistons, string returnToState)
+        private string GuessUserCommand(string userInput)
+        {
+            string userCommand = userInput.ToUpper();
+            // aliases
+            switch (userCommand)
+            {
+                case "BEGIN":
+                case "LOCK REAR":
+                case "RUN":
+                case "START":
+                    userCommand = "LOCKING REAR";
+                    break;
+                case "LOCK FRONT":
+                    userCommand = "LOCKING FRONT";
+                    break;
+                case "END":
+                case "STOP":
+                    userCommand = "HALT";
+                    break;
+                default:
+                    userCommand = "INVALID";
+                    break;
+            }
+            return userCommand;
+        }
+
+        private void SetupFSM()
+        {
+            // main sequence states
+            _fsm.AddState(
+                "DRILLING",
+                () => { DrillsEnable(_drills); PistonsExtend(_pistonsAxial); },
+                () => { DrillsDisable(_drills); }
+                );
+            _fsm.AddState(
+                "LOCKING FRONT",
+                () => { GearsAutolock(_gearsFront); PistonsExtend(_pistonsFront); },
+                NoOp
+                );
+            _fsm.AddState(
+                "UNLOCKING REAR",
+                () => { GearsUnlock(_gearsRear); PistonsRetract(_pistonsRear); },
+                NoOp
+                );
+            _fsm.AddState(
+                "CONTRACTING",
+                () => { PistonsRetract(_pistonsAxial); },
+                NoOp
+                );
+            _fsm.AddState(
+                "LOCKING REAR",
+                () => { GearsAutolock(_gearsRear); PistonsExtend(_pistonsRear); },
+                NoOp
+                );
+            _fsm.AddState(
+                "UNLOCKING FRONT",
+                () => { GearsUnlock(_gearsFront); PistonsRetract(_pistonsFront); },
+                NoOp
+                );
+
+            // main sequence transitions
+            _fsm.AddStateTransition("DRILLING", "LOCKING FRONT", () => ArePistonsInHighestPosition(_pistonsAxial));
+            _fsm.AddStateTransition("LOCKING FRONT", "UNLOCKING REAR", () => AreAnyGearsLocked(_gearsFront));
+            _fsm.AddStateTransition("UNLOCKING REAR", "CONTRACTING", () => ArePistonsInLowestPosition(_pistonsRear));
+            _fsm.AddStateTransition("CONTRACTING", "LOCKING REAR", () => ArePistonsInLowestPosition(_pistonsAxial));
+            _fsm.AddStateTransition("LOCKING REAR", "UNLOCKING FRONT", () => AreAnyGearsLocked(_gearsRear));
+            _fsm.AddStateTransition("UNLOCKING FRONT", "DRILLING", () => ArePistonsInLowestPosition(_pistonsFront));
+
+            // states to exit in-game edge-cases, conditions to detect these states, and transitions in/out
+            //
+            // FIDDLING has to be done when LOCKING gears, but no gears happen to lock: most often because
+            // the pistons can extend no further (the walls are too far away), or because the wall is too
+            // curved. In either case, the fact that the gears won't be moving can be used to detect the
+            // condition.
+            _fsm.AddStateTransition("LOCKING FRONT", "FIDDLING FRONT", () => !AreAnyGearsMoving(_gearsFront));
+            _fsm.AddState(
+                "FIDDLING FRONT",
+                () => { ResetTicks(); PistonsReverse(_pistonsAxial); PistonsReverse(_pistonsFront); },
+                () => { ResetTicks(); }
+                );
+            _fsm.AddStateTransition("FIDDLING FRONT", "LOCKING FRONT", () => FiddleTick(_gearsFront, _pistonsFront));
+
+            _fsm.AddStateTransition("LOCKING REAR", "FIDDLING REAR", () => !AreAnyGearsMoving(_gearsRear));
+            _fsm.AddState(
+                "FIDDLING REAR",
+                () => { ResetTicks(); PistonsReverse(_pistonsAxial); PistonsReverse(_pistonsRear); },
+                () => { ResetTicks(); }
+                );
+            _fsm.AddStateTransition("FIDDLING REAR", "LOCKING REAR", () => FiddleTick(_gearsRear, _pistonsRear));
+
+            // PUMPING has to be done when pistons get "sticky", or gears clip walls and therefore get "stuck".
+            // This can happen during any piston extension/contraction in the main sequence, but the case is
+            // also inadvertently covered by the FIDDLING states, so there is no need to also describe it here.
+            // The operation itself is as simple as reversing the pistons back and forth.
+            _fsm.AddStateTransition("UNLOCKING FRONT", "PUMPING FRONT", () => !AreAnyGearsMoving(_gearsFront));
+            _fsm.AddState(
+                "PUMPING FRONT",
+                () => PistonsReverse(_pistonsFront),
+                () => PistonsReverse(_pistonsFront)
+                );
+            _fsm.AddStateTransition("PUMPING FRONT", "UNLOCKING FRONT", () => true);
+
+            _fsm.AddStateTransition("UNLOCKING REAR", "PUMPING REAR", () => !AreAnyGearsMoving(_gearsRear));
+            _fsm.AddState(
+                "PUMPING REAR",
+                () => PistonsReverse(_pistonsRear),
+                () => PistonsReverse(_pistonsRear)
+                );
+            _fsm.AddStateTransition("PUMPING REAR", "UNLOCKING REAR", () => true);
+
+            // TODO: determine which state to return to based on velocity (+/-), have 1 state, 2 exit conditions!
+            _fsm.AddStateTransition("CONTRACTING", "PUMPING AXIAL C", () => !AreAnyGearsMoving(_gearsRear));
+            _fsm.AddState(
+                "PUMPING AXIAL C",
+                () => PistonsReverse(_pistonsAxial),
+                () => PistonsReverse(_pistonsAxial)
+                );
+            _fsm.AddStateTransition("PUMPING AXIAL C", "CONTRACTING", () => true);
+
+            _fsm.AddStateTransition("DRILLING", "PUMPING AXIAL D", () => !AreAnyGearsMoving(_gearsFront));
+            _fsm.AddState(
+                "PUMPING AXIAL D",
+                () => PistonsReverse(_pistonsAxial),
+                () => PistonsReverse(_pistonsAxial)
+                );
+            _fsm.AddStateTransition("PUMPING AXIAL D", "DRILLING", () => true);
+
+            // meta/helper states
+            _fsm.AddState(
+                "HALT",
+                () => DrillsDisable(_drills),
+                NoOp);
+
+            _fsm.AddState(
+                "RESET", 
+                () =>
+                {
+                    DrillsDisable(_drills);
+                    GearsUnlock(_gearsFront);
+                    GearsUnlock(_gearsRear);
+                    PistonsRetract(_pistonsAxial);
+                    PistonsRetract(_pistonsFront);
+                    PistonsRetract(_pistonsRear);
+                },
+                NoOp);
+
+            _fsm.AddState("INVALID", NoOp, NoOp);
+        }
+
+        private void ResetTicks()
+        {
+            _ticksSlept = 0;
+            _ticksToSleep = 1;
+        }
+
+        private bool FiddleTick(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> lateralPistons)
         {
             if (AreAnyGearsLocked(gears))
             {
-                _state = returnToState;
-                return;
+                return true;
             }
-
+            
             _ticksSlept++;
 
             if (_ticksSlept >= _ticksToSleep)
@@ -303,15 +283,8 @@ namespace IngameScript
             {
                 PistonsReverse(_pistonsAxial);
             }
-        }
 
-        private void PumpGearsAndPistons(List<IMyLandingGear> gears, List<IMyExtendedPistonBase> pistons, string returnToState)
-        {
-            // this will update gear positions, but we don't need the result, so discard it
-            AreAnyGearsMoving(gears);
-
-            PistonsReverse(pistons);
-            _state = returnToState;
+            return false;
         }
 
         #region drills
@@ -425,6 +398,11 @@ namespace IngameScript
                 }
             }
             return missingGroupNames;
+        }
+
+        private void NoOp()
+        {
+            return;
         }
         #endregion
     }
