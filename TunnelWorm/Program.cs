@@ -111,6 +111,10 @@ namespace IngameScript
         private string GuessUserCommand(string userInput)
         {
             string userCommand = userInput.ToUpper();
+
+            if (_fsm.IsValidState(userCommand))
+                return userCommand;
+
             // aliases
             switch (userCommand)
             {

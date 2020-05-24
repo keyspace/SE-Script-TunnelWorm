@@ -32,6 +32,19 @@ namespace IngameScript
                 _states = new Dictionary<string, State>();
             }
 
+            public void SetCurrentStateName(string newState)
+            {
+                if (_states.ContainsKey(newState))
+                {
+                    _currentStateName = newState;
+                }
+            }
+
+            public string GetCurrentStateName()
+            {
+                return _currentStateName;
+            }
+
             public void AddState(string newStateName, Action entryAction, Action exitAction)
             {
                 _states.Add(newStateName, new State(newStateName, entryAction, exitAction));
@@ -67,22 +80,29 @@ namespace IngameScript
                 }
             }
 
-            public void SetCurrentStateName(string newState)
+            public bool IsValidState(string stateName)
             {
-                if (_states.ContainsKey(newState))
-                {
-                    _currentStateName = newState;
-                }
+                return _states.ContainsKey(stateName);
             }
 
-            public string GetCurrentStateName()
+            public bool IsValidStateTransition(string originStateName, string targetStateName)
             {
-                return _currentStateName;
+                if (!IsValidState(originStateName) || !IsValidState(targetStateName))
+                    return false;
+
+                State originState = _states[originStateName];
+                foreach (Transition transition in originState.Transitions)
+                {
+                    if (transition.Target == targetStateName)
+                        return true;
+                }
+
+                return false;
             }
 
             public void TransitionToState(string newState)
             {
-                if (_currentStateName != "" && _states.ContainsKey(_currentStateName) && _states.ContainsKey(newState))
+                if (IsValidState(_currentStateName) && IsValidState(newState))
                 {
                     _states[_currentStateName].ExitAction();
                     _currentStateName = newState;
