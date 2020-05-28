@@ -205,20 +205,21 @@ namespace IngameScript
             // PUMPING has to be done when pistons get "sticky", or gears clip walls and therefore get "stuck".
             // This can happen during any piston extension/contraction in the main sequence, but the case is
             // also inadvertently covered by the FIDDLING states, so there is no need to also describe it here.
-            // The operation itself is as simple as reversing the pistons back and forth.
+            // The operation itself is as simple as reversing the pistons back and forth. The gears-moving check
+            // on exit is only there to update the gear positions, the result of the check is discarded.
             _fsm.AddStateTransition("UNLOCKING FRONT", "PUMPING FRONT", () => !AreAnyGearsMoving(_gearsFront));
             _fsm.AddState(
                 "PUMPING FRONT",
-                () => PistonsReverse(_pistonsFront),
-                () => PistonsReverse(_pistonsFront)
+                () => { PistonsReverse(_pistonsFront); },
+                () => { PistonsReverse(_pistonsFront); AreAnyGearsMoving(_gearsFront); }
                 );
             _fsm.AddStateTransition("PUMPING FRONT", "UNLOCKING FRONT", () => true);
 
             _fsm.AddStateTransition("UNLOCKING REAR", "PUMPING REAR", () => !AreAnyGearsMoving(_gearsRear));
             _fsm.AddState(
                 "PUMPING REAR",
-                () => PistonsReverse(_pistonsRear),
-                () => PistonsReverse(_pistonsRear)
+                () => { PistonsReverse(_pistonsRear); },
+                () => { PistonsReverse(_pistonsRear); AreAnyGearsMoving(_gearsRear); }
                 );
             _fsm.AddStateTransition("PUMPING REAR", "UNLOCKING REAR", () => true);
 
@@ -226,16 +227,16 @@ namespace IngameScript
             _fsm.AddStateTransition("CONTRACTING", "PUMPING AXIAL C", () => !AreAnyGearsMoving(_gearsRear));
             _fsm.AddState(
                 "PUMPING AXIAL C",
-                () => PistonsReverse(_pistonsAxial),
-                () => PistonsReverse(_pistonsAxial)
+                () => { PistonsReverse(_pistonsAxial); },
+                () => { PistonsReverse(_pistonsAxial); AreAnyGearsMoving(_gearsRear); }
                 );
             _fsm.AddStateTransition("PUMPING AXIAL C", "CONTRACTING", () => true);
 
             _fsm.AddStateTransition("DRILLING", "PUMPING AXIAL D", () => !AreAnyGearsMoving(_gearsFront));
             _fsm.AddState(
                 "PUMPING AXIAL D",
-                () => PistonsReverse(_pistonsAxial),
-                () => PistonsReverse(_pistonsAxial)
+                () => { PistonsReverse(_pistonsAxial); },
+                () => { PistonsReverse(_pistonsAxial); AreAnyGearsMoving(_gearsFront); }
                 );
             _fsm.AddStateTransition("PUMPING AXIAL D", "DRILLING", () => true);
 
@@ -243,7 +244,8 @@ namespace IngameScript
             _fsm.AddState(
                 "HALT",
                 () => DrillsDisable(_drills),
-                NoOp);
+                NoOp
+                );
 
             _fsm.AddState(
                 "RESET", 
@@ -256,7 +258,8 @@ namespace IngameScript
                     PistonsRetract(_pistonsFront);
                     PistonsRetract(_pistonsRear);
                 },
-                NoOp);
+                NoOp
+                );
 
             _fsm.AddState("INVALID", NoOp, NoOp);
         }
