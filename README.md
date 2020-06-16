@@ -2,7 +2,7 @@
 
 An in-game Programmable Block script for Space Engineers.
 
-Sequences the Inchworm to drill forwards while advancing forward using landing gears.
+Sequences the Inchworm to drill while advancing forward using landing gears.
 See [YouTube video](https://www.youtube.com/watch?v=Xi_J7OeUies) for a demo.
 
 Uses [Finite State Machine](https://github.com/keyspace/SE-Script-FiniteStateMachine)
