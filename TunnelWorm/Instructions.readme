@@ -1,14 +1,14 @@
-﻿TunnelWorm
-----------
+﻿T U N N E L   W O R M
 
 There is nothing explicitly configurable. Be sure to have all the required block groups.
 
-To start, run the script with command (any case) RUN or START.
+* To start, run the script with command (any case) RUN or START.
+* To stop, run with HALT or STOP.
+* To reset into initial position, run with RESET.
 
-To stop, run with HALT or STOP.
+By keyspace, licenced under Creative Commons BY-SA-4.0:
+https://creativecommons.org/licenses/by-sa/4.0/
 
-To reset into initial position, run with RESET.
+Source:
+https://github.com/keyspace/SE-Script-FiniteStateMachine/
 
-Code on github:
-
-https://github.com/keyspace/SE-Script-TunnelWorm
